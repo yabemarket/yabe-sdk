@@ -19,7 +19,7 @@ import { YabeClient } from "@yabemarket/sdk";
 
 const yabe = new YabeClient({ apiKey: process.env.YABE_API_KEY! });
 
-const result = await yabe.createBounty({
+const created = await yabe.createBounty({
   partner_user_ref: "customer-42",
   title: "1952 Topps Mickey Mantle #311",
   card_name: "Mickey Mantle",
@@ -31,6 +31,87 @@ const result = await yabe.createBounty({
   graded: true,
   grade: "PSA 3",
 });
+
+console.log(created.bounty.status); // "pending"
+```
+
+`createBounty` returns a `BountyResponse` containing the created bounty:
+
+```ts
+{
+  bounty: {
+    partner_user_ref: "customer-42",
+    title: "1952 Topps Mickey Mantle #311",
+    card_name: "Mickey Mantle",
+    card_maker: "Topps",
+    year: 1952,
+    graded: true,
+    grade: "PSA 3",
+    bounty_amount: 25000,
+    finders_fee: 500,
+    description: "Looking for a centered copy, PSA 3 or better.",
+    images: [],
+    top_category: "Cards",
+    category: null,
+    sub_category: null,
+    status: "pending",
+    partner_name: "Example Partner",
+    created_at: "2026-01-15T18:30:00.000Z"
+  }
+}
+```
+
+Use `listBounties` to retrieve your bounties. Every parameter is optional; this example filters to active bounties for one customer and requests the first 10:
+
+```ts
+const page = await yabe.listBounties({
+  status: "active",
+  partner_user_ref: "customer-42",
+  limit: 10,
+  offset: 0,
+});
+
+console.log(page.total); // Total matching bounties
+console.log(page.bounties[0]?.title); // First result, if present
+```
+
+`listBounties` returns a `ListBountiesResponse` with the matching records and pagination values:
+
+```ts
+{
+  bounties: [
+    {
+      partner_user_ref: "customer-42",
+      title: "1952 Topps Mickey Mantle #311",
+      card_name: "Mickey Mantle",
+      card_maker: "Topps",
+      year: 1952,
+      graded: true,
+      grade: "PSA 3",
+      bounty_amount: 25000,
+      finders_fee: 500,
+      description: "Looking for a centered copy, PSA 3 or better.",
+      images: [],
+      top_category: "Cards",
+      category: null,
+      sub_category: null,
+      status: "active",
+      partner_name: "Example Partner",
+      created_at: "2026-01-15T18:30:00.000Z"
+    }
+  ],
+  total: 1,
+  limit: 10,
+  offset: 0
+}
+```
+
+`cancelBounty` takes a bounty UUID and returns a `BountyResponse` containing the updated bounty:
+
+```ts
+const cancelled = await yabe.cancelBounty("bounty-uuid");
+
+console.log(cancelled.bounty.status); // "removed"
 ```
 
 The client calls the Yabe Partner API directly from your server:
@@ -41,9 +122,22 @@ The client calls the Yabe Partner API directly from your server:
 
 Non-success responses throw `YabeApiError`, which includes the HTTP `status`, optional `code`, and optional validation `details`. New bounties start as `pending` and go live after Yabe review.
 
+```ts
+import { YabeApiError } from "@yabemarket/sdk";
+
+try {
+  await yabe.createBounty(input);
+} catch (error) {
+  if (error instanceof YabeApiError) {
+    console.error(error.status, error.code, error.details);
+  }
+  throw error;
+}
+```
+
 `finders_fee` is optional and sets the Finder's Reward in whole US dollars, from 0 to 100,000,000. Omit it when no reward is offered. Created and listed bounty responses include `finders_fee` as a number or `null`.
 
-The current create and list responses do not include a bounty UUID, but cancellation requires one. As a result, `cancelBounty` cannot be used for a bounty created solely through these API responses until the API exposes that ID. See the [Partner API reference](https://docs.yabemarket.com/) for current response examples and error codes.
+The current create and list responses do not include a bounty UUID, but cancellation requires one. You can call `cancelBounty` when you have the UUID from another source; the UUID cannot currently be obtained from these SDK responses. See the [Partner API reference](https://docs.yabemarket.com/) for the current endpoint contract and error codes.
 
 ## React bounty form
 
@@ -82,4 +176,4 @@ The example's `/api/yabe/bounties` route belongs to your application. On that se
 
 ## License
 
-MIT.
+MIT

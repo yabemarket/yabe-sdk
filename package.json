@@ -1,8 +1,12 @@
 {
   "name": "@yabemarket/sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "TypeScript client and React bounty form for the Yabe Partner API",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yabemarket/yabe-sdk.git"
+  },
   "type": "module",
   "sideEffects": false,
   "engines": {
